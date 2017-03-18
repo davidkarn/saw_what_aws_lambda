@@ -1,0 +1,16 @@
+{
+  "name": "SayWhat",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "devDependencies": {},
+  "dependencies": {
+    "aws-sdk": "^2.28.0",
+    "stream-buffers": "^3.0.1",
+    "watson-developer-cloud": "^2.27.0"
+  }
+}
