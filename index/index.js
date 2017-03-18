@@ -17,18 +17,28 @@ function get_url(key, bucket) {
 function timestamp() {
     return new Date() - 1 }
 
-function save_to_dynamodb(key, bucket, text, success, fail) {
+function update_to_db(id, data, success, fail) {
+    doc_client.get(
+        {TableName:  "TranscribedNotes",
+         Key:        {audio_url: id}},
+        (err, orig_data) => {
+            if (err) console.log("error pulling by id", id, err)
+
+            data = Object.assign((orig_data || {Item: {}}).Item,
+                                 {audio_url: id},
+                                 data)
+            doc_client.put(
+                {TableName:  'TranscribedNotes',
+                 Item:        data},
+                (err, response) => {
+                    if (err)    fail()
+                    else        success(response) })})}
+                    
+function save_to_dynamodb(key, bucket, transcribed_text, success, fail) {
     console.log("saving now");
-    doc_client.put(
-        {TableName:  'TranscribedNotes',
-        Item:       {audio_url:         get_url(key, bucket),
-                    transcribed_text:   text}},
-        (err, data) => {
-            console.log("doc result", err, data)
-            if (err)
-                fail()
-            else
-                success(data) })}
+    update_to_db(get_url(key, bucket),
+                 {transcribed_text},
+                 success, fail)}
 
 function transcribe_stream(stream, next, fail) {
     console.log("doing transcribe")
@@ -51,53 +61,13 @@ function transcribe_stream(stream, next, fail) {
 
     }); }
 
-//transcribe_stream(fs.createReadStream('../sir.wav'))
-
 exports.handler = (event, context, callback) => {
     const bucket        = event.Records[0].s3.bucket.name;
     const key           = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ' '));
     const params        = {Bucket:  bucket,
                            Key:    key}
     var transcribed     = ""
-    /*
-    var payload = JSON.stringify(
-        {url:       get_url(key, bucket),
-        metadata:   {}})
-      
-    var request = http.request(
-        {host:      api_hostname,
-        port:       443,
-        path:       transcribe_endpoint,
-        method:     'POST',
-        headers:    {'Content-Type':    "application/json",
-                    'Content-Length':   payload.length}}, 
-        function (res) {
-            var body = '';
-            
-            console.log('got res', body)
-            res.on('data', function(chnk) { body += chnk})
-            res.on('end', function() {
 
-            })
-            res.on('error', (e) => context.fail('error', e.message))});
- 
-*/
-    
-
-/*    s3.getObject(params, (err, data) => {
-        if (err) {
-            console.log(err);
-            const message = `Error getting object ${key} from bucket ${bucket}. Make sure they exist and your bucket is in the same region as this function.`;
-            console.log(message);
-            callback(message);
-        } else {
-//            var myReadableStreamBuffer = new streamBuffers.ReadableStreamBuffer({
-//                frequency: 10,       // in milliseconds.
-//                chunkSize: 2048     // in bytes.
-//            }); 
-  
-//            myReadableStreamBuffer.put(data.Body);
-*/
     var stream = s3.getObject(params).createReadStream()
     console.log("transcribing", key, bucket, stream)
     transcribe_stream(stream, 
