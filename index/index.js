@@ -23,10 +23,10 @@ function update_to_db(id, data, success, fail) {
          Key:        {audio_url: id}},
         (err, orig_data) => {
             if (err) console.log("error pulling by id", id, err)
-
-            data = Object.assign((orig_data || {Item: {}}).Item,
+            console.log('data', orig_data, data, id, JSON.stringify(orig_data))
+            data = Object.assign((orig_data || {Item: {}}).Item || {},
                                  {audio_url: id},
-                                 data)
+                                 data || {})
             doc_client.put(
                 {TableName:  'TranscribedNotes',
                  Item:        data},
