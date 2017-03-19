@@ -19,16 +19,16 @@ function timestamp() {
 
 function update_to_db(id, data, success, fail) {
     doc_client.get(
-        {TableName:  "TranscribedNotes",
-         Key:        {audio_url: id}},
+        {TableName:  "Notes",
+         Key:        {id}},
         (err, orig_data) => {
             if (err) console.log("error pulling by id", id, err)
             console.log('data', orig_data, data, id, JSON.stringify(orig_data))
             data = Object.assign((orig_data || {Item: {}}).Item || {},
-                                 {audio_url: id},
+                                 {id: id},
                                  data || {})
             doc_client.put(
-                {TableName:  'TranscribedNotes',
+                {TableName:  'Notes',
                  Item:        data},
                 (err, response) => {
                     if (err)    fail()
@@ -36,8 +36,9 @@ function update_to_db(id, data, success, fail) {
                     
 function save_to_dynamodb(key, bucket, transcribed_text, success, fail) {
     console.log("saving now");
-    update_to_db(get_url(key, bucket),
-                 {transcribed_text},
+    update_to_db(Number.parseInt(key),
+                 {transcribed_text,
+                  audio_url: get_url(key, bucket)},
                  success, fail)}
 
 function transcribe_stream(stream, next, fail) {
